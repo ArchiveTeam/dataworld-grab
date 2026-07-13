@@ -398,22 +398,6 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       if raw_config then
         local config = cjson.decode(raw_config)
         context["regional_cluster"] = config["regional_cluster"]
-        local resources = config["openAccessResources"]
-        if resources then
-          local access = resources[context["owner"]] or {}
-          local allowed = access["mode"] == "all"
-          for _, project in ipairs(access["allowlist"] or {}) do
-            if project == context["project"] then
-              allowed = true
-            end
-          end
-          if not allowed then
-            io.stdout:write("No browser view.\n")
-            io.stdout:flush()
-            abort_item()
-            return urls
-          end
-        end
         ids["https://data.world/api/events/token"] = true
         check(
           "https://data.world/api/events/token",
@@ -574,7 +558,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
             check("https://data.world/api/" .. context["owner"] .. "/dataset/" .. context["project"] .. "/version/" .. version["previousVersionid"])
           end
         elseif url == "https://data.world/api/" .. context["owner"] .. "/dataset/" .. context["project"] .. "/layers/extent" then
-          for _, layer in ipairs(json["tables"]) do
+          for _, layer in ipairs(json["tables"] or {}) do
             check(
               "https://query.data.world/table_view_window/" .. item_value .. "/" .. url_encode(layer["@id"]) .. "?startRow=0&endRow=200&ascending=true",
               {
