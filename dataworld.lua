@@ -704,6 +704,7 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
     io.stdout:flush()
     tries = tries + 1
     local datapackage = string.match(url["url"], "^https?://download%.data%.world/datapackage/")
+      or string.match(url["url"], "^https?://download%.data%.world/download/")
     local maxtries = 6
     if datapackage then
       maxtries = 60
