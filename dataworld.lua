@@ -27,7 +27,6 @@ local bad_items = {}
 local ids = {}
 
 local retry_url = false
-local retry_after = nil
 local context = {}
 
 local date_pattern = "([0-9][0-9][0-9][0-9]%-[0-9][0-9]%-[0-9][0-9])"
@@ -600,10 +599,6 @@ wget.callbacks.write_to_warc = function(url, http_stat)
   if not item_name then
     error("No item name found.")
   end
-  if status_code == 429
-    and string.match(url["url"], "^https?://download%.data%.world/datapackage/") then
-    retry_after = tonumber(http_stat["response_headers"]["headers"]["retry-after"][1])
-  end
   if status_code ~= 200
     and status_code ~= 301
     and status_code ~= 302
@@ -703,12 +698,7 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
     io.stdout:write("Server returned bad response. ")
     io.stdout:flush()
     tries = tries + 1
-    local datapackage = string.match(url["url"], "^https?://download%.data%.world/datapackage/")
-      or string.match(url["url"], "^https?://download%.data%.world/download/")
-    local maxtries = 6
-    if datapackage then
-      maxtries = 60
-    end
+    local maxtries = 7
     if tries > maxtries then
       io.stdout:write(" Skipping.\n")
       io.stdout:flush()
@@ -716,19 +706,10 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
       abort_item()
       return wget.actions.EXIT
     end
-    local sleep_time
-    if datapackage then
-      sleep_time = 5
-      if retry_after then
-        sleep_time = retry_after
-      end
-      retry_after = nil
-    else
-      sleep_time = math.random(
-        math.floor(math.pow(2, tries-0.5)),
-        math.floor(math.pow(2, tries))
-      )
-    end
+    local sleep_time = math.random(
+      math.floor(math.pow(2, tries-0.5)),
+      math.floor(math.pow(2, tries))
+    )
     io.stdout:write("Sleeping " .. sleep_time .. " seconds.\n")
     io.stdout:flush()
     os.execute("sleep " .. sleep_time)
